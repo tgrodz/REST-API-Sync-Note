@@ -1,0 +1,23 @@
+
+pipenv shell 
+
+# if run firstly
+pipenv sync    
+
+//Enviroment for Unix-Linux input to CLI
+ export ENV_FILE_LOCATION=./.env
+
+python run.py
+
+post  with bearer token
+http://127.0.0.1:5300/api/notes
+
+JSON
+{
+    "name": "My first note",
+    "content": "just something text",
+    "category":"test",
+    "tags": ["my_tag_one","my_tag_two"],
+    "timestamp_client":"2019-08-15 10:28:45"
+}
+
