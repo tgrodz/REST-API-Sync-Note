@@ -1,6 +1,6 @@
 from flask import Response, request
 from flask_jwt_extended import create_access_token
-from database.models import User
+from data.models import User
 from flask_restful import Resource
 import datetime
 from mongoengine.errors import FieldDoesNotExist, NotUniqueError, DoesNotExist

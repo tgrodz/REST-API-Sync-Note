@@ -2,7 +2,8 @@ import datetime
 from .db import db
 from flask_bcrypt import generate_password_hash, check_password_hash
 
-# drop database >>
+
+# drop data >>
 # mongo
 # use note-hub
 # db.dropDatabase()
@@ -16,14 +17,11 @@ class Note(db.Document):
     category = db.StringField(max_length=200, default='')
     tags = db.ListField(db.StringField(max_length=100), blank=True, null=True, required=False)
     active = db.BooleanField(default=True)  # for trash
-
     # https://pymongo.readthedocs.io/en/stable/examples/datetimes.html
     created_at_server_utc_row = db.DateTimeField(default=datetime.datetime.utcnow, required=False)
-    # created_at_server_local = db.DateTimeField(default=datetime.datetime.now, required=False)
     timestamp_client = db.StringField(blank=True, null=True, required=False)  # %Y-%m-%d %H:%M:%S'
-
-    # value = db.ListField(IntField(blank=True, null=True), default=lambda: [1, 2, 3])  # for future features
     added_by = db.ReferenceField('User')
+
 
 class User(db.Document):
     email = db.EmailField(required=True, unique=True)
@@ -35,5 +33,6 @@ class User(db.Document):
 
     def check_password(self, password):
         return check_password_hash(self.password, password)
+
 
 User.register_delete_rule(Note, 'added_by', db.CASCADE)

@@ -5,9 +5,9 @@ from flask_mail import Mail, Message
 
 from app import app
 from app import mail
+from resources.errors import InternalServerError
 
-
-app.config['MAIL_SERVER']='smtp.gmail.com'
+app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 465
 app.config['MAIL_USERNAME'] = '****@gmail.com'
 app.config['MAIL_PASSWORD'] = 'password'

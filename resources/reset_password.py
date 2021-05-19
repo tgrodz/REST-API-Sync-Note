@@ -1,97 +1,93 @@
-from flask import request, render_template
+import json
+
+from flask import request, render_template, Response
 from flask_jwt_extended import create_access_token, decode_token
-from database.models import User
+from data.models import User
 from flask_restful import Resource
 import datetime
 from resources.errors import SchemaValidationError, InternalServerError, \
-    EmailDoesnotExistsError, BadTokenError
+    EmailDoesnotExistsError, BadTokenError, ExpiredTokenError
 from jwt.exceptions import ExpiredSignatureError, DecodeError, \
     InvalidTokenError
 
+from resources.holder import RecoveryHolder
 from services.mail_service_gmail import send_email
 
-# Metaclass
-class Singleton(type):
-    """ Define an instance operation that lets client access it's unique instance """
-
-    def __init__(cls, name, bases, attrs, **kwargs):
-        super().__init__(name, bases, attrs)
-        cls._instance = None
-
-    def __call__(cls, *args, **kwargs):
-        if cls._instance is None:
-            cls._instance = super().__call__(*args, **kwargs)
-        return cls._instance
-
-
-class LinkToken(metaclass=Singleton):
-    """ Link  """
-    expires = datetime.timedelta(hours=24)
-    reset_token = ''
-    pass
+sender_by = 'support@sync-note.com'
 
 
 class ForgotPassword(Resource):
     def post(self):
-        url = request.host_url + 'reset/'
+        url = request.host_url + 'api/auth/reset/'
         try:
             body = request.get_json()
             email = body.get('email')
-            if not email:
+            new_password = body.get('new_password')
+            if not email or not new_password:
                 raise SchemaValidationError
 
             user = User.objects.get(email=email)
             if not user:
                 raise EmailDoesnotExistsError
 
-            link_token = LinkToken()
-            link_token.reset_token = create_access_token(str(user.id), expires_delta=link_token.expires)
+            holder = RecoveryHolder()
+            holder.reset_token = create_access_token(str(user.id), expires_delta=holder.expires)
+            holder.password = new_password
 
-            return send_email('[Sync-note] Reset Your Password',
-                              sender='support@sync-note.com',
-                              recipients=[user.email],
-                              text_body=render_template('email/reset_password.txt',
-                                                        url=url + link_token.reset_token),
-                              html_body=render_template('email/reset_password.html',
-                                                        url=url + link_token.reset_token))
+            send_email('[Sync-note] Reset Your Password',
+                       sender=sender_by,
+                       recipients=[user.email],
+                       text_body=render_template('email/reset_password.txt', url=url + holder.reset_token),
+                       html_body=render_template('email/reset_password.html', url=url + holder.reset_token))
+
+            response_data = {
+                "status": "waiting_confirm",
+                "info": "Sent email - check your email to confirm new password"
+            }
+            return Response(json.dumps(response_data), mimetype="application/json", status=200)
+
         except SchemaValidationError:
             raise SchemaValidationError
         except EmailDoesnotExistsError:
             raise EmailDoesnotExistsError
         except Exception as e:
+            print('--Exception ' + str(e))
             raise InternalServerError
 
 
-class ResetPassword(Resource):
-    def post(self):
-        url = request.host_url + 'reset/'
+# Temporary unique link
+class ResetPasswordConfirm(Resource):
+    def get(self):
+        holder = RecoveryHolder()
         try:
-            body = request.get_json()
-            reset_token = body.get('reset_token')
-            password = body.get('password')
 
-            if not reset_token or not password:
+            if not holder.reset_token or not holder.password:
                 raise SchemaValidationError
 
-            user_id = decode_token(reset_token)['identity']
+            user_id = decode_token(holder.reset_token)['identity']
 
             user = User.objects.get(id=user_id)
-
-            user.modify(password=password)
+            user.modify(password=holder.password)
             user.hash_password()
             user.save()
 
-            return send_email('[Sync-note] Password reset successful',
-                              sender='support@sync-note.com',
-                              recipients=[user.email],
-                              text_body='Password reset was successful',
-                              html_body='<p>Password reset was successful</p>')
+            send_email('[Sync-note] Password reset successful',
+                       sender=sender_by,
+                       recipients=[user.email],
+                       text_body='Password reset was successful',
+                       html_body='<p>Password reset was successful</p>')
 
-        except SchemaValidationError:
-            raise SchemaValidationError
+            return Response(json.dumps(
+                {
+                    'tmp_token': holder.reset_token,
+                    'new_pass': holder.password
+                }),
+                mimetype="application/json", status=200)
+
         except ExpiredSignatureError:
             raise ExpiredTokenError
         except (DecodeError, InvalidTokenError):
             raise BadTokenError
         except Exception as e:
+            print('--Exception ' + str(e))
             raise InternalServerError

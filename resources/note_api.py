@@ -1,5 +1,5 @@
 from flask import Response, request
-from database.models import Note, User
+from data.models import Note, User
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from flask_restful import Resource
 from mongoengine.errors import FieldDoesNotExist, NotUniqueError, DoesNotExist, ValidationError, InvalidQueryError
