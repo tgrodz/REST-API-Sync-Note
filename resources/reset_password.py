@@ -77,12 +77,8 @@ class ResetPasswordConfirm(Resource):
                        text_body='Password reset was successful',
                        html_body='<p>Password reset was successful</p>')
 
-            return Response(json.dumps(
-                {
-                    'tmp_token': holder.reset_token,
-                    'new_pass': holder.password
-                }),
-                mimetype="application/json", status=200)
+            return Response(json.dumps({'status': 'successful', }),
+                            mimetype="application/json", status=200)
 
         except ExpiredSignatureError:
             raise ExpiredTokenError

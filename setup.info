@@ -1,17 +1,50 @@
+# pipenv - Python Version Management tool
 
 pipenv shell 
 
-# if run firstly
+# If run firstly
 pipenv sync    
 
-//Enviroment for Unix-Linux input to CLI
+# Environment for Unix-like input to CLI
  export ENV_FILE_LOCATION=./.env
 
 python run.py
 
-post  with bearer token
+# API
+GET
 http://127.0.0.1:5300/api/notes
 
+POST
+http://localhost:5300/api/auth/signup
+JSON
+{
+    "email": "username@email.com",
+    "password": "***"
+}
+
+RESPONSE:
+JSON
+{
+    "id": "60a59aec02023a68e5c5f6f6"
+}
+
+
+POST
+http://localhost:5300/api/auth/login
+JSON
+{
+    "email": "username@email.com",
+    "password": "***"
+}
+
+RESPONSE:
+JSON
+{
+    "token": "***"
+}
+
+POST  with bearer token
+http://127.0.0.1:5300/api/notes
 JSON
 {
     "name": "My first note",
@@ -21,3 +54,14 @@ JSON
     "timestamp_client":"2019-08-15 10:28:45"
 }
 
+PUT, DELETE - bearer token
+http://127.0.0.1:5300/api/note/<id>
+
+JSON(PUT-body sample)
+{
+    "name": "My first note update",
+    "content": "just something text update",
+    "category":"test",
+    "tags": ["my_tag_one","my_tag_two"],
+    "timestamp_client":"2019-08-15 11:16:34"
+}
